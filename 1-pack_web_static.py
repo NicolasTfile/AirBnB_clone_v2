@@ -15,4 +15,10 @@ def do_pack():
     now = d.strftime('%Y%m%d%H%M%S')
 
     local("mkdir -p versions")
-    local("tar -czvf versions/web_static_{}.tgz web_static".format(now))
+    archive_path = "versions/web_static_{}.tgz".format(now)
+    result = local("tar -czvf {} web_static".format(archive_path))
+
+    if result.succeeded:
+        return archive_path
+    else:
+        return None
