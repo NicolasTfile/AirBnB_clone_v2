@@ -1,30 +1,46 @@
 #!/usr/bin/python3
 """
-Fabric script based on the file 1-pack_web_static.py that distributes an
-archive to the web servers
+Fabscript for deployment
 """
+from datetime import datetime
+from fabric.api import *
+from os import path
 
-from fabric.api import put, run, env
-from os.path import exists
-env.hosts = ["100.25.202.219", "54.237.119.147"]
+
+env.hosts = ['18.234.105.207', '34.234.204.132']
+
+
+def do_pack():
+    """Generates a .tgz archive from the contents
+    of the web_static folder of this repository.
+    """
+
+    d = datetime.now()
+    now = d.strftime('%Y%m%d%H%M%S')
+
+    local("mkdir -p versions")
+    local("tar -czvf versions/web_static_{}.tgz web_static".format(now))
 
 
 def do_deploy(archive_path):
-    """distributes an archive to the web servers"""
-    if exists(archive_path) is False:
-        return False
-    try:
-        file_n = archive_path.split("/")[-1]
-        no_ext = file_n.split(".")[0]
-        path = "/data/web_static/releases/"
-        put(archive_path, '/tmp/')
-        run('mkdir -p {}{}/'.format(path, no_ext))
-        run('tar -xzf /tmp/{} -C {}{}/'.format(file_n, path, no_ext))
-        run('rm /tmp/{}'.format(file_n))
-        run('mv {0}{1}/web_static/* {0}{1}/'.format(path, no_ext))
-        run('rm -rf {}{}/web_static'.format(path, no_ext))
-        run('rm -rf /data/web_static/current')
-        run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
+    """Distributes an .tgz archive through web servers
+    """
+
+    if path.exists(archive_path):
+        archive = archive_path.split('/')[1]
+        a_path = "/tmp/{}".format(archive)
+        folder = archive.split('.')[0]
+        f_path = "/data/web_static/releases/{}/".format(folder)
+
+        put(archive_path, a_path)
+        run("mkdir -p {}".format(f_path))
+        run("tar -xzf {} -C {}".format(a_path, f_path))
+        run("rm {}".format(a_path))
+        run("mv -f {}web_static/* {}".format(f_path, f_path))
+        run("rm -rf {}web_static".format(f_path))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {} /data/web_static/current".format(f_path))
+
         return True
-    except:
-        return False
+
+    return False
